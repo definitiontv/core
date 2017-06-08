@@ -26,11 +26,16 @@ namespace OCA\Files\Command;
 
 use OC\Files\Filesystem;
 use OC\Files\View;
+use OCA\Encryption\Crypto\Crypt;
+use OCA\Encryption\Crypto\DecryptAll;
+use OCA\Encryption\Crypto\Encryption;
 use OCP\Files\FileInfo;
 use OCP\Files\Mount\IMountManager;
 use OCP\IUserManager;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
+use OCA\Encryption\Util;
+use OCA\Encryption\KeyManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -70,10 +75,14 @@ class TransferOwnership extends Command {
 	/** @var string */
 	private $finalTarget;
 
-	public function __construct(IUserManager $userManager, IManager $shareManager, IMountManager $mountManager) {
+	/** @var  Util $util */
+	private $util;
+
+	public function __construct(IUserManager $userManager, IManager $shareManager, IMountManager $mountManager, Util $util) {
 		$this->userManager = $userManager;
 		$this->shareManager = $shareManager;
 		$this->mountManager = $mountManager;
+		$this->util = $util;
 		parent::__construct();
 	}
 
@@ -194,6 +203,10 @@ class TransferOwnership extends Command {
 					$progress->advance();
 					$this->allFiles[] = $fileInfo;
 					if ($fileInfo->isEncrypted()) {
+
+						if($this->util->isMasterKeyEnabled()) {
+							return true;
+						}
 						$this->encryptedFiles[] = $fileInfo;
 					}
 					return true;
